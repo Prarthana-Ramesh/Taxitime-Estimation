@@ -1,11 +1,3 @@
-# # e.g., sklearn RandomForest
-# from sklearn.ensemble import RandomForestRegressor
-# rf = RandomForestRegressor(n_estimators=200)
-# X = np.vstack([d.global_feat.numpy().ravel() for d in dataset_list])
-# y = np.array([d.y.item() for d in dataset_list])
-# # split & train ...
-
-# baseline.py
 import torch
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
@@ -47,7 +39,6 @@ def load_baseline(path='processed/baseline_rf.joblib'):
 
 if __name__ == "__main__":
     import sys
-    # quick entry when processed dataset exists
     ds_path = 'processed/dataset_list.pt'
     ds = torch.load(ds_path, weights_only=False)
     train_baseline(ds)

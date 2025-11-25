@@ -1,4 +1,3 @@
-# data_processor.py
 import os
 import glob
 import pandas as pd
@@ -10,16 +9,9 @@ from datetime import datetime
 from utilities import haversine_m
 from input_processor import path_to_pyg_data
 
-# --- CONFIG ---
-NEAREST_VERTEX_THRESHOLD_M = 30.0   # max distance allowed to snap GPS point to taxiway vertex
-MIN_POINTS_PER_SEGMENT = 3          # skip extremely small taxi traces
-TIME_COLS = ['Timestamp','UTC']     # timestamp candidates
-# --------------
-
-
-# ============================================================
-#   1) READ TAXIWAY .xlsx FILES
-# ============================================================
+NEAREST_VERTEX_THRESHOLD_M = 30.0
+MIN_POINTS_PER_SEGMENT = 3
+TIME_COLS = ['Timestamp','UTC']
 
 def load_taxiway_vertices(vertex_xlsx_path):
     """
@@ -89,11 +81,6 @@ def load_taxiway_segments(twy_xlsx_path):
 
     return segs
 
-
-# ============================================================
-#   2) FLIGHT DATA READING + GPS → MAP MATCHING
-# ============================================================
-
 def read_flight_csv(path):
     """
     Reads flight CSV → normalizes columns.
@@ -103,17 +90,11 @@ def read_flight_csv(path):
     df = pd.read_csv(path)
     df = df.rename(columns={c: c.strip() for c in df.columns})
 
-    # Timestamp parsing
-    # Prefer the UTC column (ISO 8601 format)
     if "UTC" in df.columns:
         df['__ts'] = pd.to_datetime(df["UTC"], errors='coerce', utc=True)
     else:
-        # fallback to UNIX timestamps or other formats
         ts = df[df.columns[0]].astype(str)
-
-        # UNIX seconds (10 digits)
         mask_sec = ts.str.match(r"^\d{10}$")
-        # UNIX milliseconds (13 digits)
         mask_ms  = ts.str.match(r"^\d{13}$")
 
         df['__ts'] = pd.NaT
@@ -124,12 +105,10 @@ def read_flight_csv(path):
         if mask_ms.any():
             df.loc[mask_ms, '__ts'] = pd.to_datetime(ts[mask_ms].astype(int), unit='ms', errors='coerce')
 
-        # fallback parse
         mask_normal = df['__ts'].isna()
         df.loc[mask_normal, '__ts'] = pd.to_datetime(ts[mask_normal], errors='coerce')
 
 
-    # Position split
     if 'Position' in df.columns:
         split_pos = df['Position'].astype(str).str.split(",", expand=True)
         if split_pos.shape[1] >= 2:
@@ -141,11 +120,9 @@ def read_flight_csv(path):
         df['latitude'] = pd.to_numeric(df.get(latc), errors='coerce')
         df['longitude'] = pd.to_numeric(df.get(lonc), errors='coerce')
 
-    # altitude
     altc = next((c for c in df.columns if "alt" in c.lower()), "Altitude")
     df['altitude'] = pd.to_numeric(df.get(altc, 0), errors='coerce').fillna(0)
 
-    # callsign
     callc = next((c for c in df.columns if "call" in c.lower()), None)
     df['callsign'] = df.get(callc, df.get("Callsign", "UNKNOWN")).astype(str)
 
@@ -227,7 +204,6 @@ def map_match_segment(seg, vids, lat_arr, lon_arr):
         if dist <= NEAREST_VERTEX_THRESHOLD_M:
             mapped.append(vid)
 
-    # remove duplicates
     if not mapped:
         return []
 
@@ -237,12 +213,6 @@ def map_match_segment(seg, vids, lat_arr, lon_arr):
             final_path.append(v)
 
     return final_path
-
-
-
-# ============================================================
-#   3) MAIN DATASET BUILDER
-# ============================================================
 
 def create_dataset_from_raw(
         taxiway_vertex_xlsx,
@@ -256,12 +226,10 @@ def create_dataset_from_raw(
     Reads all .xlsx & .csv → produces dataset_list.pt of PyG Data objects.
     """
 
-    # Load taxiway geometry (xlsx)
     vertex_index_to_coords = load_taxiway_vertices(taxiway_vertex_xlsx)
     segments = load_taxiway_segments(taxiway_data_xlsx)
     vids, lat_arr, lon_arr = build_vertex_arrays(vertex_index_to_coords)
 
-    # Gather all flight logs
     files = glob.glob(os.path.join(takeoff_dir, "*.csv")) + \
             glob.glob(os.path.join(landing_dir, "*.csv"))
 

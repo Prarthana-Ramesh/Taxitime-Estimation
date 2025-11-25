@@ -1,4 +1,3 @@
-# evaluate.py
 import os
 import torch
 import numpy as np
@@ -7,20 +6,15 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from baseline import load_baseline
 from gnn import TaxiTimeGNN
 
-# Import EXACT SAME functions used during training
 from data_processor import (
     load_taxiway_vertices,
     read_flight_csv,
     extract_zero_altitude_segments,
     build_vertex_arrays,
-    map_match_segment,        # <-- THIS is the CORRECT one
+    map_match_segment,
 )
 from input_processor import path_to_pyg_data
 
-
-# --------------------------
-# File paths
-# --------------------------
 TAXIWAY_VERTEX_FILE = "data_raw/Taxiway_Vertex_Data.xlsx"
 
 EVAL_TAKEOFF_DIR = "data_raw/takeoffs"
@@ -30,24 +24,15 @@ GNN_MODEL_PATH      = "processed/gnn_model.pt"
 BASELINE_MODEL_PATH = "processed/baseline_rf.joblib"
 SCALER_PATH         = "processed/global_feat_scaler.npy"
 
-
-# --------------------------
-# Load scaler
-# --------------------------
 def load_scaler():
     obj = np.load(SCALER_PATH, allow_pickle=True).item()
     return obj["mean"], obj["scale"]
 
-
-# --------------------------
-# Build evaluation dataset
-# --------------------------
 def build_eval_dataset():
     print("Loading taxiway vertices...")
     vertex_map = load_taxiway_vertices(TAXIWAY_VERTEX_FILE)
     vids, lat_arr, lon_arr = build_vertex_arrays(vertex_map)
 
-    # Collect evaluation CSVs
     files  = [os.path.join(EVAL_TAKEOFF_DIR, f)  for f in os.listdir(EVAL_TAKEOFF_DIR)  if f.lower().endswith(".csv")]
     files += [os.path.join(EVAL_LANDING_DIR, f) for f in os.listdir(EVAL_LANDING_DIR) if f.lower().endswith(".csv")]
 
@@ -61,12 +46,10 @@ def build_eval_dataset():
         try:
             df = read_flight_csv(fp)
         except:
-            print("  ❌ Could not read file, skipping.")
+            print("Could not read file, skipping.")
             continue
 
-        # Same logic as training: altitude==0
         df["altitude"] = df["altitude"].fillna(0).astype(float)
-        # EXACTLY identical to training:
         df["altitude_flag"] = (df["altitude"] == 0)
 
         segments = extract_zero_altitude_segments(df)
@@ -82,14 +65,14 @@ def build_eval_dataset():
             print(f"      Matched vertices: {len(vertex_path)}")
 
             if len(vertex_path) < 2:
-                print("      ❌ Dropped: <2 vertices")
+                print("      Dropped: <2 vertices")
                 continue
 
             if taxi_time <= 0:
-                print("      ❌ Dropped: negative or zero taxi time")
+                print("      Dropped: negative or zero taxi time")
                 continue
 
-            print("      ✔ ACCEPTED SEGMENT")
+            print("      ACCEPTED SEGMENT")
             data = path_to_pyg_data(vertex_path, vertex_map, taxi_time)
             dataset.append(data)
 
@@ -97,18 +80,11 @@ def build_eval_dataset():
     return dataset, vertex_map
 
 
-# --------------------------
-# Scale dataset
-# --------------------------
 def scale_dataset(dataset, mean, scale):
     for d in dataset:
         d.global_feat = torch.tensor((d.global_feat.numpy() - mean) / scale, dtype=torch.float)
     return dataset
 
-
-# --------------------------
-# Evaluate baseline
-# --------------------------
 def evaluate_baseline(dataset):
     print("\nEvaluating baseline model...")
 
@@ -126,10 +102,6 @@ def evaluate_baseline(dataset):
     print(f"Baseline RMSE: {rmse:.2f} sec")
     return mae, rmse
 
-
-# --------------------------
-# Evaluate GNN
-# --------------------------
 def evaluate_gnn(dataset):
     print("\nEvaluating GNN model...")
 
@@ -163,15 +135,11 @@ def evaluate_gnn(dataset):
     return mae, rmse
 
 
-# --------------------------
-# MAIN
-# --------------------------
 if __name__ == "__main__":
     eval_dataset, vertex_map = build_eval_dataset()
 
     if len(eval_dataset) == 0:
-        print("\n❌ No evaluation samples found.")
-        print("This means evaluation GPS does not match taxiway vertices used in training.")
+        print("\nNo evaluation samples found.")
         exit()
 
     mean, scale = load_scaler()

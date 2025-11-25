@@ -1,4 +1,3 @@
-# train.py
 import torch
 import numpy as np
 import torch.optim as optim
@@ -8,19 +7,16 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from gnn import TaxiTimeGNN
 import os
 
-# path to processed dataset (created by data_processor.create_dataset_from_raw)
 PROCESSED_DATASET_PATH = 'processed/dataset_list.pt'
-SCALER_SAVE_PATH = 'processed/global_feat_scaler.npy'  # we'll save mean/std
+SCALER_SAVE_PATH = 'processed/global_feat_scaler.npy'
 
 def collate_and_normalize(dataset):
-    # Fit scaler on all global features (shape [1,3] per data)
     import numpy as np
     globals_all = np.vstack([d.global_feat.numpy().ravel() for d in dataset])
     scaler = StandardScaler()
     scaler.fit(globals_all)
     for d in dataset:
         d.global_feat = torch.tensor(scaler.transform(d.global_feat.numpy()), dtype=torch.float)
-    # save scaler params
     np.save(SCALER_SAVE_PATH, {'mean': scaler.mean_, 'scale': scaler.scale_}, allow_pickle=True)
     return dataset, scaler
 
@@ -86,7 +82,6 @@ def train_main(num_epochs=65, batch_size=32, lr=1e-3, device=None):
     print("Saved GNN weights to processed/gnn_model.pt")
     return model, scaler
 
-# ---- simple evaluation helper for single-path inference ----
 from utilities import haversine_m
 import numpy as np
 def predict_for_vertex_path(model, vertex_path, vertex_index_to_coords, scaler=None, device=None):
@@ -96,7 +91,6 @@ def predict_for_vertex_path(model, vertex_path, vertex_index_to_coords, scaler=N
     scaler: fitted StandardScaler (if None, will attempt to load SCALER_SAVE_PATH)
     """
     device = device or (torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
-    # reuse input_processor.path_to_pyg_data
     from input_processor import path_to_pyg_data
     data = path_to_pyg_data(vertex_path, vertex_index_to_coords, target_taxi_time_seconds=0.0)
     if scaler is None:
@@ -117,5 +111,4 @@ def predict_for_vertex_path(model, vertex_path, vertex_index_to_coords, scaler=N
     return float(pred[0])
 
 if __name__ == "__main__":
-    # quick train when running this script
     train_main()
