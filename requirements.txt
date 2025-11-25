@@ -1,0 +1,8 @@
+openpyxl
+torch 
+torchvision 
+torchaudio
+torch-geometric
+numpy 
+pandas 
+scikit-learn

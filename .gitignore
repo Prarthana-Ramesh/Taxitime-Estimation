@@ -1,0 +1,9 @@
+venv/
+data_raw/
+processed/
+
+*.pt
+*.joblib
+*.npy
+
+__pycache__/
