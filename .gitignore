@@ -1,9 +1,10 @@
 venv/
-data_raw/
-processed/
 
 *.pt
 *.joblib
 *.npy
+*.csv
+*.xlsx
+*.kml
 
 __pycache__/
