@@ -7,10 +7,14 @@ import pandas as pd
 
 
 # --------------------------------------------
-# LOAD VALID IDENTIFIERS FROM EXCEL
-# --------------------------------------------
-def load_valid_idents(excel_file):
-    df = pd.read_excel(excel_file, sheet_name="KTEB_Taxiway_Data")
+# LOAD VALID IDENTIFIERS FROM EXCEL OR CSV
+# -----------------------------------------
+def load_valid_idents(file_path):
+    # Auto-detect file format
+    if file_path.lower().endswith('.csv'):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.read_excel(file_path, sheet_name="KTEB_Taxiway_Data")
 
     # Clean column names
     df.columns = df.columns.str.strip().str.replace(" ", "_")
@@ -36,8 +40,8 @@ def validate_user_path(path_list, allowed_idents):
 
 # -----------------------------------------------------
 # MAIN EXECUTION
-# -----------------------------------------------------
-excel_file = "KTEB_Airport_Data.xlsx"
+# -----------------------------------------------
+excel_file = "data_raw/KTEB_Taxiway_Data.csv"
 
 # 1. Load airport graph
 G, vertex_dict = build_graph(excel_file)
@@ -50,7 +54,7 @@ print("Allowed Taxiway Idents:", sorted(allowed_idents))
 ident_lengths = compute_ident_lengths(G)
 
 # 4. Compute average taxi speed
-avg_speed = compute_average_speed("historical_data.xlsx")
+avg_speed = compute_average_speed("data_raw/historical_data.csv")
 print(f"Average Taxi Speed: {avg_speed:.2f} m/s")
 
 # 5. Take user input

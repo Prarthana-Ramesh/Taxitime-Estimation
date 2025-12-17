@@ -1,4 +1,6 @@
 venv/
+.venv/
+data_raw/
 __pycache__/
 *.pt
 *.joblib
