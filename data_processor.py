@@ -13,15 +13,19 @@ NEAREST_VERTEX_THRESHOLD_M = 30.0
 MIN_POINTS_PER_SEGMENT = 3
 TIME_COLS = ['Timestamp','UTC']
 
-def load_taxiway_vertices(vertex_xlsx_path):
+def load_taxiway_vertices(vertex_file_path):
     """
-    Loads Taxiway_Vertex_Data.xlsx
+    Loads Taxiway_Vertex_Data (xlsx or csv)
     Expected columns:
         Vertex_Index | Latitude | Longitude
     Returns:
         vertex_index_to_coords = {vertex_index: (lat, lon)}
     """
-    df = pd.read_excel(vertex_xlsx_path)
+    # Auto-detect file format (xlsx or csv)
+    if vertex_file_path.lower().endswith('.csv'):
+        df = pd.read_csv(vertex_file_path)
+    else:
+        df = pd.read_excel(vertex_file_path)
     df = df.rename(columns={c: c.strip() for c in df.columns})
 
     # detect columns dynamically
@@ -30,7 +34,7 @@ def load_taxiway_vertices(vertex_xlsx_path):
     lon_col = next((c for c in df.columns if "lon" in c.lower()), None)
 
     if idx_col is None or lat_col is None or lon_col is None:
-        raise ValueError("Could not find Vertex_Index / Latitude / Longitude columns in Vertex XLSX.")
+        raise ValueError("Could not find Vertex_Index / Latitude / Longitude columns in Vertex file.")
 
     vertex_index_to_coords = {}
     for _, r in df.iterrows():
@@ -43,21 +47,25 @@ def load_taxiway_vertices(vertex_xlsx_path):
 
 
 
-def load_taxiway_segments(twy_xlsx_path):
+def load_taxiway_segments(twy_file_path):
     """
-    Loads KTEB_Taxiway_Data.xlsx
+    Loads KTEB_Taxiway_Data (xlsx or csv)
     Expected columns:
         Ident | Vertex_Count | Vertex_Indices
     Vertex_Indices may contain: "1,2,3,4" OR "1;2;3;4"
     """
-    df = pd.read_excel(twy_xlsx_path, dtype=str).fillna('')
+    # Auto-detect file format (xlsx or csv)
+    if twy_file_path.lower().endswith('.csv'):
+        df = pd.read_csv(twy_file_path, dtype=str).fillna('')
+    else:
+        df = pd.read_excel(twy_file_path, dtype=str).fillna('')
     df = df.rename(columns={c: c.strip() for c in df.columns})
 
     ident_col = next((c for c in df.columns if "ident" in c.lower()), None)
     vinds_col = next((c for c in df.columns if "vertex" in c.lower()), None)
 
     if ident_col is None or vinds_col is None:
-        raise ValueError("Could not find Ident / Vertex_Indices columns in Taxiway XLSX.")
+        raise ValueError("Could not find Ident / Vertex_Indices columns in Taxiway file.")
 
     segs = []
     for _, r in df.iterrows():

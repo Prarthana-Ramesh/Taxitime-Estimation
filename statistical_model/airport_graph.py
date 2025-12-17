@@ -23,12 +23,25 @@ def haversine(p1, p2):
     return R * c
 
 
-def build_graph(excel_file):
-    """Builds a NetworkX graph from the airport Excel file."""
+def build_graph(file_path):
+    """Builds a NetworkX graph from the airport data file (Excel or CSV)."""
     
-    # Load data
-    taxiway_data = pd.read_excel(excel_file, sheet_name="KTEB_Taxiway_Data")
-    vertex_data = pd.read_excel(excel_file, sheet_name="KTEB_Vertex_Data")
+    # Auto-detect file format
+    if file_path.lower().endswith('.csv'):
+        # For CSV, load as single file (assumed to have taxiway data)
+        taxiway_data = pd.read_csv(file_path)
+        # CSV doesn't have multiple sheets, so we'll need separate vertex file or fallback
+        try:
+            # Try to load vertex data from a separate CSV
+            vertex_file = file_path.replace("KTEB_Taxiway_Data.csv", "Taxiway_Vertex_Data.csv")
+            vertex_data = pd.read_csv(vertex_file)
+        except:
+            print("Warning: Could not load vertex data from separate file")
+            vertex_data = pd.DataFrame()
+    else:
+        # Load from Excel with sheets
+        taxiway_data = pd.read_excel(file_path, sheet_name="KTEB_Taxiway_Data")
+        vertex_data = pd.read_excel(file_path, sheet_name="KTEB_Vertex_Data")
 
     # Clean column names
     taxiway_data.columns = taxiway_data.columns.str.strip().str.replace(" ", "_")

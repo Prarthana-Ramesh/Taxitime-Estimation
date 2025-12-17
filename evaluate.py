@@ -17,8 +17,8 @@ from input_processor import path_to_pyg_data
 
 TAXIWAY_VERTEX_FILE = "data_raw/Taxiway_Vertex_Data.xlsx"
 
-EVAL_TAKEOFF_DIR = "data_raw/takeoffs"
-EVAL_LANDING_DIR = "data_raw/landings"
+EVAL_TAKEOFF_DIR = "data_raw/Takeoff"
+EVAL_LANDING_DIR = "data_raw/Landing"
 
 GNN_MODEL_PATH      = "processed/gnn_model.pt"
 BASELINE_MODEL_PATH = "processed/baseline_rf.joblib"
